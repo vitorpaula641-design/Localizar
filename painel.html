@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Painel</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:650px;margin:30px auto;padding:20px}
+    input,button{padding:12px;margin:5px 0}
+    #result{margin-top:20px}
+  </style>
+</head>
+<body>
+<h1>Painel de localização</h1>
+<p>Informe o ID usado no link NFC e o token administrativo configurado no servidor.</p>
+<input id="id" placeholder="ID do relógio">
+<input id="token" type="password" placeholder="Token administrativo">
+<button id="check">Consultar</button>
+<div id="result"></div>
+
+<script>
+document.getElementById("check").onclick = async () => {
+  const id = document.getElementById("id").value.trim();
+  const token = document.getElementById("token").value;
+  const result = document.getElementById("result");
+
+  if (!id || !token) {
+    result.textContent = "Preencha os dois campos.";
+    return;
+  }
+
+  const r = await fetch("/api/location/" + encodeURIComponent(id), {
+    headers: {"x-admin-token": token}
+  });
+
+  const data = await r.json();
+  if (!r.ok) {
+    result.textContent = data.error || "Erro.";
+    return;
+  }
+
+  const map = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
+  result.innerHTML =
+    `<p>Latitude: ${data.latitude}<br>
+     Longitude: ${data.longitude}<br>
+     Precisão aproximada: ${data.accuracy ?? "desconhecida"} m<br>
+     Recebido: ${new Date(data.receivedAt).toLocaleString("pt-BR")}</p>
+     <p><a href="${map}" target="_blank" rel="noopener">Abrir no mapa</a></p>`;
+};
+</script>
+</body>
+</html>

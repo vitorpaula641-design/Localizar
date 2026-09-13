@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Relógio encontrado</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:20px}
+    button{padding:14px 18px;border:0;border-radius:10px;font-size:16px;cursor:pointer}
+    #status{margin-top:20px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <h1>Você encontrou um relógio?</h1>
+  <p>Se você quiser ajudar o dono a recuperá-lo, pode compartilhar a localização deste celular.</p>
+  <button id="locate">Compartilhar minha localização</button>
+  <div id="status"></div>
+
+<script>
+const status = document.getElementById("status");
+const button = document.getElementById("locate");
+const id = new URLSearchParams(location.search).get("id");
+
+button.addEventListener("click", () => {
+  if (!id) {
+    status.textContent = "Link de identificação inválido.";
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    status.textContent = "Este navegador não oferece localização.";
+    return;
+  }
+
+  status.textContent = "Pedindo permissão de localização...";
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    try {
+      const response = await fetch("/api/location", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          id,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        })
+      });
+
+      if (!response.ok) throw new Error();
+      status.textContent = "Localização enviada. Obrigado por ajudar a devolver o relógio!";
+      button.disabled = true;
+    } catch {
+      status.textContent = "Não foi possível enviar a localização.";
+    }
+  }, (err) => {
+    status.textContent =
+      err.code === 1
+        ? "A localização não foi compartilhada."
+        : "Não foi possível obter a localização.";
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+});
+</script>
+</body>
+</html>
